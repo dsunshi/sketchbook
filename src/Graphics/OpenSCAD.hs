@@ -126,7 +126,7 @@ module Graphics.OpenSCAD (
   -- ** 'Facet's.
   var, fn, fs, fa, def,
   -- ** General convenience functions
-  diam, draw, drawL, (#),
+  diam, draw, drawL, (#), (#+),
   module Colours)
 
 where
@@ -148,6 +148,7 @@ class Eq a => Vector a where
   toList :: a -> [Double]
   (#*) :: a -> a -> a      -- cross product
   (#-) :: a -> a -> a      -- difference between two vectors
+  (#+) :: a -> a -> a      -- sum of two vectors
 
   (#.) :: a -> a -> Double -- dot product
   v1 #. v2 = sum $ zipWith (*) (toList v1) (toList v2)
@@ -170,6 +171,7 @@ instance Vector Vector2d where
   rVector (x, y) = "[" ++ show x ++ "," ++ show y ++ "]"
   toList (x, y) = [x, y]
   (x1, y1) #- (x2, y2) = (x1 - x2, y1 - y2)
+  (x1, y1) #+ (x2, y2) = (x1 + x2, y1 + y2)
   (x1, y1) #* (x2, y2) = (0, x1 * y2 - y1 * x2) -- for purposes of collinear
 
 -- | 'Vector3d' is used where 'Graphics.OpenSCAD' expects an OpenSCAD
