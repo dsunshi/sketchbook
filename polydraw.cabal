@@ -16,6 +16,6 @@ executable polydraw
     ghc-options:        -pgmL markdown-unlit
     build-tool-depends: markdown-unlit:markdown-unlit
     hs-source-dirs:     src
-    other-modules:      Graphics.OpenSCAD
+    other-modules:      Graphics.OpenSCAD, Tree
     default-extensions: FlexibleContexts
     default-language:   Haskell2010
