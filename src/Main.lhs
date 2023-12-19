@@ -4,6 +4,7 @@
 ```haskell
 import Graphics.OpenSCAD
 import Tree
+import Land
 
 -- type V2 = Vector2d
 -- 
@@ -17,5 +18,5 @@ import Tree
 
 ```haskell
 main :: IO ()
-main = draw $ evergreen 32.0 35.0
+main = draw $ union [ land, evergreen 32.0 35.0 ]
 ```
