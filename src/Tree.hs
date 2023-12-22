@@ -3,6 +3,8 @@ module Tree(evergreen) where
 import Graphics.OpenSCAD
 import System.Environment
 
+zUp :: (Vector (a, b, c), Fractional a, Fractional b, Eq a, Eq b, Eq c) =>
+     c -> Model (a, b, c) -> Model (a, b, c)
 zUp z = translate (0.0, 0.0, z)
 
 octogon :: Double -> Double -> Model3d
@@ -11,11 +13,12 @@ obOctogon :: Double -> Double -> Double -> Model3d
 obOctogon r1 h r2 = obCylinder r1 h r2 (fn 8)
 
 asRadius :: Fractional a => a -> a
-asRadius w = w / 2.0
+asRadius d = d / 2.0
 
 main = do
     args <- getArgs
-    writeFile "evergreen.scad" (render $ evergreen 32.0 35.0)
+    writeFile (head args) (render
+        $ evergreen 32.0 35.0)
 
 evergreen :: Double -> Double -> Model3d
 evergreen w h = union [
