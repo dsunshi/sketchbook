@@ -11,10 +11,8 @@ common warnings
 
 executable polydraw
     import:             warnings
-    main-is:            Main.lhs
-    build-depends:      base, markdown-unlit, containers, filepath, colour, hsnoise
-    ghc-options:        -pgmL markdown-unlit
-    build-tool-depends: markdown-unlit:markdown-unlit
+    main-is:            Main.hs
+    build-depends:      base, containers, filepath, colour, hsnoise
     hs-source-dirs:     src
     other-modules:      Graphics.OpenSCAD, Tree, Land
     default-extensions: FlexibleContexts
