@@ -1,17 +1,23 @@
 module Tree(evergreen) where
 
 import Graphics.OpenSCAD
+import System.Environment
 
 zUp z = translate (0.0, 0.0, z)
 
+octogon :: Double -> Double -> Model3d
 octogon r h = cylinder r h (fn 8)
+obOctogon :: Double -> Double -> Double -> Model3d
 obOctogon r1 h r2 = obCylinder r1 h r2 (fn 8)
 
+asRadius :: Fractional a => a -> a
 asRadius w = w / 2.0
 
 main = do
+    args <- getArgs
     writeFile "evergreen.scad" (render $ evergreen 32.0 35.0)
 
+evergreen :: Double -> Double -> Model3d
 evergreen w h = union [
         stump,
         cones
@@ -23,6 +29,7 @@ evergreen w h = union [
         cones  = zUp stumpH $ growCones (asRadius w) coneH
         coneH  = (h - stumpH) / 3.0
 
+growCones :: Double -> Double -> Model3d
 growCones w h = union [
     cone w (0.675 * w),
     zUp h
@@ -31,4 +38,4 @@ growCones w h = union [
         $ cone (0.645 * w) 0.0 -- TODO: 0.2?
     ]
     where
-        cone r1 r2 = obOctogon r1 h r2
+        cone r1 = obOctogon r1 h
