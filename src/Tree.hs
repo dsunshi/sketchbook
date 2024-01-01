@@ -9,12 +9,14 @@ zUp z = translate (0.0, 0.0, z)
 
 octogon :: Double -> Double -> Model3d
 octogon r h = cylinder r h (fn 8)
+
 obOctogon :: Double -> Double -> Double -> Model3d
 obOctogon r1 h r2 = obCylinder r1 h r2 (fn 8)
 
 asRadius :: Fractional a => a -> a
 asRadius d = d / 2.0
 
+main :: IO()
 main = do
     args <- getArgs
     writeFile (head args) (render
