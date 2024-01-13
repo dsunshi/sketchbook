@@ -14,6 +14,6 @@ executable polydraw
     main-is:            Main.hs
     build-depends:      base, containers, filepath, colour, hsnoise
     hs-source-dirs:     src
-    other-modules:      Graphics.OpenSCAD, Tree, Land
+    other-modules:      Graphics.Polydraw, Tree, Land
     default-extensions: FlexibleContexts
     default-language:   Haskell2010

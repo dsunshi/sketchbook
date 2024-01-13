@@ -1,7 +1,7 @@
 
 module Land(land) where
 
-import Graphics.OpenSCAD
+import Graphics.Polydraw
 import Numeric.Noise.Perlin
 
 land :: Model Vector3d
