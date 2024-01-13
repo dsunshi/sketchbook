@@ -2,57 +2,149 @@
 module Land(land) where
 
 import Graphics.OpenSCAD
-import Numeric.Noise.Perlin
+-- import Numeric.Noise.Perlin
+import Data.List (sortOn)
 
-land :: Model Vector3d
-land = union $ map (\(x, y, z) -> translate (x, y, 0) $ box voxel voxel z) points
-    where
-        size = 10.0
-        voxel = 10.0
-        seed = 1
-        octaves = 5
-        scale = 0.015
-        persistance = 0.5
-        coords = [ 1.0 .. size ]
-        perlinNoise = perlin seed octaves scale persistance
-        -- xs = [noiseValue perlinNoise (x, y, 0) | y <- coords, x <- coords]
-        -- zs = map (fromInteger . noiseToHeight) xs
-        xs = [(x, y, fromIntegral $ noiseToHeight (noiseValue perlinNoise (x, y, 0))) | y <- coords, x <- coords]
-        -- zOffset = minHeight xs
-        zOffset = 50 -- TODO
-        points = map (\(x, y, z) -> (x * voxel - voxel, y * voxel - voxel, z * voxel - zOffset)) xs
+type V3 = Vector3d
 
--- minHeight :: Ord a => 
-minHeight xs = minimum (map zPos xs)
+voxelSize :: Double
+voxelSize = 10.0
 
-zPos :: (a, b, c) -> c
+nozzelRes :: Double
+nozzelRes = 0.3
+
+sqrt2 :: Double
+sqrt2 = 1.414213562
+
+wallThickness :: Double
+wallThickness = 2.0 * nozzelRes
+
+supportR :: Double
+supportR = 4 * nozzelRes
+
+
+zPos :: V3 -> Double
 zPos (_, _, z) = z
 
-noiseToHeight :: Double -> Integer
-noiseToHeight n = round $ rescaleRange n (-1.0) 1.0 0.0 limit :: Integer
+peak :: V3 -> [V3] -> V3
+peak (row, col, _z) xs = last $ sortOn zPos zNeighbors
     where
-        limit = 20.0
+        zNeighbors = filter (\(x, y, _) -> (row == x) && (col == y)) xs
 
--- # Formula
--- https://stats.stackexchange.com/questions/281162/scale-a-number-between-a-range
--- rmin
--- denote the minimum of the range of your measurement
--- rmax
--- denote the maximum of the range of your measurement
--- tmin
--- denote the minimum of the range of your desired target scaling
--- tmax
--- denote the maximum of the range of your desired target scaling
--- m∈[rmin,rmax]
+isTop :: V3 -> [V3] -> Bool
+isTop v xs = zPos v == zPos (peak v xs)
 
---     denote your measurement to be scaled
+isSupport :: V3 -> [V3] -> Bool
+isSupport v xs = zPos v < zPos (peak v xs)
 
--- Then
+voxel :: V3 -> [V3] -> Model V3
+voxel v xs = translate (v3Scale v voxelSize) $ union [support, faces]
+    where
+        support
+                | isTop v xs     = topSupport
+                | isSupport v xs = insideSupport
+                | otherwise      = undefined
+        faces = voxelFaces v (neighbors v xs)
 
--- m↦m−rminrmax−rmin×(tmax−tmin)+tmin
+insideSupport :: Model V3
+insideSupport = translate (voxelSize/2.0, voxelSize/2.0, 0) $
+        cylinder supportR voxelSize (fn 33)
 
--- will scale m
--- linearly into [tmin,tmax] as desired.
+topSupport :: Model V3
+topSupport = union [
+    translate (voxelSize/2.0, voxelSize/2.0, hOffset) $
+        rotate (0, 0, 45) $
+        obCylinder 0 h (sqrt2 * hollowSize * 0.5) (fn 4),
+    translate (voxelSize/2.0, voxelSize/2.0, 0) $
+        cylinder supportR poleHeight (fn 33)
+    ]
+    where
+        hollowSize = voxelSize - 2 * wallThickness
+            -- (0.0, 0.0,  1.0) -> (0.0, 0.0, voxelSize - wallThickness)
+            -- (0.0, 0.0, -1.0) -> (0.0, 0.0, wallThickness)
+            -- (0.0,  1.0, 0.0) -> (0.0, voxelSize - wallThickness, 0.0)
+            -- (0.0, -1.0, 0.0) -> (0.0, wallThickness, 0.0)
+            -- (1.0,  0.0, 0.0) -> (voxelSize - wallThickness, 0.0, 0.0)
+            -- (-1.0, 0.0, 0.0) -> (wallThickness, 0.0, 0.0)
+            -- (0.0, 0.0, 0.0)  -> (0.1, 0.2, 0.3)
+            -- otherwise -> undefined
+        h = hollowSize / 2.0 -- tan 45 / 2 = 0.5
+        hOffset = voxelSize - (wallThickness + h)
+        poleHeight = hOffset + 2 * wallThickness
 
-rescaleRange :: Double -> Double -> Double -> Double -> Double -> Double
-rescaleRange m rmin rmax tmin tmax = ((m - rmin) / (rmax - rmin)) * (tmax - tmin) + tmin
+voxelFaces :: V3 -> [V3] -> Model V3
+voxelFaces v xs = difference defaultVoxel faces
+    where
+        faces = union $ pullIn v xs
+
+pullIn :: V3 -> [V3] -> [Model V3]
+pullIn _ [] = []
+pullIn v ((x, y, z):rest) = translate pos (cube hollowSize) : pullIn v rest
+    where
+        delta = v3Sub v (x, y, z)
+        hollowSize = voxelSize - 2 * wallThickness
+        pos = case delta of
+            (0.0, 0.0,  1.0) -> (wallThickness, wallThickness, wallThickness - voxelSize) -- above
+            (0.0, 0.0, -1.0) -> (wallThickness, wallThickness, hollowSize - wallThickness) -- 
+            (0.0,  1.0, 0.0) -> (wallThickness, wallThickness - hollowSize, wallThickness) -- 
+            (0.0, -1.0, 0.0) -> (wallThickness, hollowSize - wallThickness, wallThickness) -- 
+            (1.0,  0.0, 0.0) -> (wallThickness - hollowSize, wallThickness, wallThickness) -- 
+            (-1.0, 0.0, 0.0) -> (hollowSize - wallThickness, wallThickness, wallThickness) -- 
+            (0.0, 0.0, 0.0)  -> (0.1, 0.2, 0.3)
+            otherwise -> undefined
+
+defaultVoxel :: Model V3
+defaultVoxel = difference
+    (cube voxelSize)
+    (translate (wallThickness, wallThickness, -wallThickness) $ box hollowSize hollowSize voxelSize)
+    where
+        hollowSize = voxelSize - 2 * wallThickness
+
+neighbors :: V3 -> [V3] -> [V3]
+neighbors v xs = neighbors' xs []
+    where
+        neighbors' [] acc = acc
+        neighbors' ((x, y, z) : rest) acc =
+            if isNeighbor v (x, y, z)
+                then neighbors' rest ((x, y, z) : acc)
+                else neighbors' rest acc
+
+v3Add :: V3 -> V3 -> V3
+v3Add (x1, y1, z1) (x2, y2, z2) = (x1 + x2, y1 + y2, z1 + z2)
+
+v3Sub :: V3 -> V3 -> V3
+v3Sub (x1, y1, z1) (x2, y2, z2) = (x1 - x2, y1 - y2, z1 - z2)
+
+v3Abs :: V3 -> V3
+v3Abs (x, y, z) = (abs(x), abs(y), abs(z))
+
+v3Scale :: V3 -> Double -> V3
+v3Scale (x1, y1, z1) s = (x1 * s, y1 * s, z1 * s)
+
+voxels :: [V3]
+voxels = [
+    (0.0, 0.0, 0.0),
+    (0.0, 0.0, 1.0),
+    (1.0, 0.0, 0.0),
+    (1.0, 1.0, 0.0),
+    (0.0, 1.0, 0.0),
+    (0.0, 2.0, 0.0)
+    ]
+
+isNeighbor :: V3 -> V3 -> Bool
+isNeighbor a b = (> 0) $ length $ filter (\x -> b == x) possible
+    where
+        possible = map (v3Add a) neighborOffsets
+
+neighborOffsets :: [V3]
+neighborOffsets = [
+    (0.0, 0.0,  1.0),
+    (0.0, 0.0, -1.0),
+    (0.0,  1.0, 0.0),
+    (0.0, -1.0, 0.0),
+    (1.0,  0.0, 0.0),
+    (-1.0, 0.0, 0.0)
+    ]
+
+land :: Model V3
+land = union $ map (`voxel` voxels) voxels

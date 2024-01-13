@@ -11,11 +11,22 @@ import Land
 --     n = fromIntegral $ length xs
 --     (x', y') = foldl (#+) (0.0, 0.0) xs
 --
+importScale :: Double
+importScale = 0.2;
+
 main :: IO ()
-main = draw $ union [ land,
-    translate(55, 15, 40) $ evergreen 32.0 35.0,
-    translate(85,  5, 40) $ evergreen 42.0 45.0,
-    translate(65, 35, 30) $ evergreen 27.0 30.0,
-    translate(75, 65, 20) $ evergreen 32.0 35.0,
-    translate(15, 35, 20) $ evergreen 22.0 25.0
+main = draw $ union [
+    land,
+    translate (5, 5, 20) $
+        scale (importScale, importScale, importScale) $
+        importFile "./resources/grass-4-blades.stl",
+    translate (15, 15, 10) $
+        scale (importScale, importScale, importScale) $
+        importFile "./resources/grass-4-blades-alt.stl",
+    translate (5, 15, 10) $
+        scale (importScale, importScale, importScale) $
+        importFile "./resources/grass-2-blades.stl",
+    translate (15, 5, 10) $
+        scale (importScale, importScale, importScale) $
+        importFile "./resources/grass-3-blades.stl"
     ]
